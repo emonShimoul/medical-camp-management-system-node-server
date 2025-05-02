@@ -27,6 +27,7 @@ async function run() {
     await client.connect();
 
     const userCollection = client.db("mcmsDB").collection("users");
+    const campCollection = client.db("mcmsDB").collection("camps");
 
     // user related api
     app.post("/users", async (req, res) => {
@@ -39,6 +40,13 @@ async function run() {
         return res.send({ message: "user already exists", insertedId: null });
       }
       const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // camp related api
+    app.post("/camp", async (req, res) => {
+      const camp = req.body;
+      const result = await campCollection.insertOne(camp);
       res.send(result);
     });
 
