@@ -28,6 +28,9 @@ async function run() {
 
     const userCollection = client.db("mcmsDB").collection("users");
     const campCollection = client.db("mcmsDB").collection("camps");
+    const registeredCampsCollection = client
+      .db("mcmsDB")
+      .collection("registeredCamps");
 
     // user related api
     app.post("/users", async (req, res) => {
@@ -51,6 +54,19 @@ async function run() {
     });
     app.get("/camp", async (req, res) => {
       const result = await campCollection.find().toArray();
+      res.send(result);
+    });
+    app.get("/camp/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await campCollection.findOne(query);
+      res.send(result);
+    });
+
+    // registeredCamps related api
+    app.post("/registeredCamps", async (req, res) => {
+      const registration = req.body;
+      const result = await registeredCampsCollection.insertOne(registration);
       res.send(result);
     });
 
