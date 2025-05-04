@@ -49,6 +49,10 @@ async function run() {
       const result = await campCollection.insertOne(camp);
       res.send(result);
     });
+    app.get("/camp", async (req, res) => {
+      const result = await campCollection.find().toArray();
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
