@@ -70,6 +70,16 @@ async function run() {
       res.send(result);
     });
 
+    //  fetch by participant email
+    app.get("/registeredCamps", async (req, res) => {
+      const email = req.query.email;
+      console.log("Fetching registered camps for:", email);
+      const result = await registeredCampsCollection
+        .find({ userEmail: email })
+        .toArray();
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
