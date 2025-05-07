@@ -89,6 +89,45 @@ async function run() {
       res.send({ admin });
     });
 
+    // Get user profile by email (admin only)
+    app.get(
+      "/user/profile/:email",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const query = { email };
+        const user = await userCollection.findOne(query);
+        if (user) {
+          res.send(user); // send full document
+        } else {
+          res.status(404).send({ message: "User not found" });
+        }
+      }
+    );
+
+    app.put(
+      "/user/profile/:email",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const { name, phone, image } = req.body;
+
+        const filter = { email };
+        const updateDoc = {
+          $set: {
+            name,
+            phone,
+            image,
+          },
+        };
+
+        const result = await userCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      }
+    );
+
     app.post("/users", async (req, res) => {
       const user = req.body;
       // insert email if user doesn't exists
