@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+var jwt = require("jsonwebtoken");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
 
@@ -32,7 +33,62 @@ async function run() {
       .db("mcmsDB")
       .collection("registeredCamps");
 
+    const feedbackCollection = client.db("mcmsDB").collection("feedback");
+
+    // jwt related api
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res.send({ token });
+    });
+
+    // middlewares
+    const verifyToken = (req, res, next) => {
+      console.log("inside verify token: ", req.headers.authorization);
+      if (!req.headers.authorization) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+      const token = req.headers.authorization.split(" ")[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: "unauthorized access" });
+        }
+        req.decoded = decoded;
+        next();
+      });
+      //   next();
+    };
+
+    // use verifyAdmin after verifyToken
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
     // user related api
+    app.get("/user/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === "admin";
+      }
+      res.send({ admin });
+    });
+
     app.post("/users", async (req, res) => {
       const user = req.body;
       // insert email if user doesn't exists
@@ -52,7 +108,7 @@ async function run() {
       const result = await campCollection.insertOne(camp);
       res.send(result);
     });
-    app.get("/camp", async (req, res) => {
+    app.get("/camp", verifyToken, async (req, res) => {
       const result = await campCollection.find().toArray();
       res.send(result);
     });
@@ -77,6 +133,21 @@ async function run() {
       const result = await registeredCampsCollection
         .find({ userEmail: email })
         .toArray();
+      res.send(result);
+    });
+
+    app.delete("/registeredCamps/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await registeredCampsCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+
+    // feedback related api
+    app.post("/feedback", async (req, res) => {
+      const feedbackData = req.body;
+      const result = await feedbackCollection.insertOne(feedbackData);
       res.send(result);
     });
 
