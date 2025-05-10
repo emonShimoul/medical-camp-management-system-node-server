@@ -106,27 +106,41 @@ async function run() {
       }
     );
 
-    app.put(
-      "/user/profile/:email",
-      verifyToken,
-      verifyAdmin,
-      async (req, res) => {
-        const email = req.params.email;
-        const { name, phone, image } = req.body;
+    // Get participant profile by email
+    app.get("/participant/profile/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await userCollection.findOne(query);
 
-        const filter = { email };
-        const updateDoc = {
-          $set: {
-            name,
-            phone,
-            image,
-          },
-        };
-
-        const result = await userCollection.updateOne(filter, updateDoc);
-        res.send(result);
+      if (user) {
+        res.send(user);
+      } else {
+        res.status(404).send({ message: "User not found" });
       }
-    );
+    });
+
+    app.put("/user/profile/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+
+      // prevent users from updating others' profiles
+      if (req.decoded.email !== email) {
+        return res.status(403).send({ message: "Forbidden access" });
+      }
+
+      const { name, phone, image } = req.body;
+
+      const filter = { email };
+      const updateDoc = {
+        $set: {
+          name,
+          phone,
+          image,
+        },
+      };
+
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
     app.post("/users", async (req, res) => {
       const user = req.body;
