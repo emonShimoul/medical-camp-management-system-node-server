@@ -157,6 +157,24 @@ async function run() {
       const result = await campCollection.findOne(query);
       res.send(result);
     });
+    app.delete(
+      "/delete-camp/:campId",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const campId = req.params.campId;
+
+        try {
+          const result = await campCollection.deleteOne({
+            _id: new ObjectId(campId),
+          });
+          res.send(result);
+        } catch (err) {
+          console.error("Error deleting camp:", err);
+          res.status(500).send({ message: "Internal Server Error" });
+        }
+      }
+    );
 
     // registeredCamps related api
     app.post("/registeredCamps", async (req, res) => {
