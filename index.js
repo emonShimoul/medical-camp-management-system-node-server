@@ -157,6 +157,17 @@ async function run() {
       const result = await campCollection.findOne(query);
       res.send(result);
     });
+    app.put("/camp/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const updateData = req.body;
+
+      const result = await campCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updateData }
+      );
+
+      res.send(result);
+    });
     app.delete(
       "/delete-camp/:campId",
       verifyToken,
