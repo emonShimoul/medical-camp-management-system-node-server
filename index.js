@@ -3,6 +3,7 @@ const app = express();
 const cors = require("cors");
 var jwt = require("jsonwebtoken");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 5000;
 
 const { ObjectId } = require("mongodb");
@@ -32,7 +33,7 @@ async function run() {
     const registeredCampsCollection = client
       .db("mcmsDB")
       .collection("registeredCamps");
-
+    const paymentCollection = client.db("mcmsDB").collection("payments");
     const feedbackCollection = client.db("mcmsDB").collection("feedback");
 
     // jwt related api
@@ -224,6 +225,48 @@ async function run() {
         _id: new ObjectId(id),
       });
       res.send(result);
+    });
+
+    // payment related api
+
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+
+      if (!price || isNaN(price)) {
+        return res.status(400).send({ error: "Invalid price provided" });
+      }
+
+      const amount = parseInt(price * 100);
+
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount,
+          currency: "usd",
+          payment_method_types: ["card"],
+        });
+
+        res.send({
+          clientSecret: paymentIntent.client_secret,
+        });
+      } catch (err) {
+        console.error("Stripe error:", err);
+        res.status(500).send({ error: "Failed to create payment intent" });
+      }
+    });
+
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      const paymentResult = await paymentCollection.insertOne(payment);
+
+      // carefully delete each item from the cart
+      console.log("payment info", payment);
+      const query = {
+        _id: {
+          $in: payment.cartIds.map((id) => new ObjectId(id)),
+        },
+      };
+
+      res.send({ paymentResult });
     });
 
     // feedback related api
