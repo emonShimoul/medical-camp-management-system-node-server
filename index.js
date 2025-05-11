@@ -158,6 +158,12 @@ async function run() {
     // camp related api
     app.post("/camp", async (req, res) => {
       const camp = req.body;
+
+      // Initialize participantCount if not set
+      if (camp.participantCount === undefined) {
+        camp.participantCount = 0;
+      }
+
       const result = await campCollection.insertOne(camp);
       res.send(result);
     });
@@ -218,11 +224,20 @@ async function run() {
           .send({ message: "You already registered for this camp." });
       }
 
-      // ✅ Add default statuses before saving
+      // Add default statuses before saving
       registration.confirmationStatus = "pending";
       registration.paymentStatus = "unpaid";
 
       const result = await registeredCampsCollection.insertOne(registration);
+
+      if (result.insertedId) {
+        // ✅ Increment participant count in the camp document
+        await campCollection.updateOne(
+          { _id: new ObjectId(campId) },
+          { $inc: { participantCount: 1 } }
+        );
+      }
+
       res.send(result);
     });
 
