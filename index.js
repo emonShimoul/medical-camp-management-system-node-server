@@ -202,7 +202,7 @@ async function run() {
       }
     );
 
-    // registeredCamps related api
+    // registeredCamps related api (for user)
     app.post("/registeredCamps", async (req, res) => {
       const registration = req.body;
       const { campId, userEmail } = registration;
@@ -218,6 +218,10 @@ async function run() {
           .status(409)
           .send({ message: "You already registered for this camp." });
       }
+
+      // ✅ Add default statuses before saving
+      registration.confirmationStatus = "pending";
+      registration.paymentStatus = "unpaid";
 
       const result = await registeredCampsCollection.insertOne(registration);
       res.send(result);
@@ -235,6 +239,55 @@ async function run() {
 
     app.delete("/registeredCamps/:id", async (req, res) => {
       const id = req.params.id;
+      const result = await registeredCampsCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+
+    // registeredCamps related api (for admin)
+    app.get(
+      "/admin/registeredCamps",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const result = await registeredCampsCollection.find().toArray();
+        res.send(result);
+      }
+    );
+
+    app.patch(
+      "/registeredCamps/confirm/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const result = await registeredCampsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { confirmationStatus: "confirmed" } }
+        );
+        res.send(result);
+      }
+    );
+
+    app.delete("/registeredCamps/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+
+      const registration = await registeredCampsCollection.findOne({
+        _id: new ObjectId(id),
+      });
+
+      if (!registration) return res.status(404).send({ message: "Not found" });
+
+      if (
+        registration.paymentStatus === "paid" &&
+        registration.confirmationStatus === "confirmed"
+      ) {
+        return res
+          .status(400)
+          .send({ message: "Cannot cancel a confirmed paid registration." });
+      }
+
       const result = await registeredCampsCollection.deleteOne({
         _id: new ObjectId(id),
       });
