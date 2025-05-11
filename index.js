@@ -205,6 +205,20 @@ async function run() {
     // registeredCamps related api
     app.post("/registeredCamps", async (req, res) => {
       const registration = req.body;
+      const { campId, userEmail } = registration;
+
+      // Check if the user already registered for this camp
+      const existing = await registeredCampsCollection.findOne({
+        campId,
+        userEmail,
+      });
+
+      if (existing) {
+        return res
+          .status(409)
+          .send({ message: "You already registered for this camp." });
+      }
+
       const result = await registeredCampsCollection.insertOne(registration);
       res.send(result);
     });
