@@ -360,12 +360,29 @@ async function run() {
       res.send(result);
     });
 
+    // app.get("/feedback", async (req, res) => {
+    //   const { email } = req.query;
+    //   const feedbacks = await feedbackCollection
+    //     .find({ userEmail: email })
+    //     .toArray();
+    //   res.send(feedbacks);
+    // });
+
     app.get("/feedback", async (req, res) => {
       const { email } = req.query;
-      const feedbacks = await feedbackCollection
-        .find({ userEmail: email })
-        .toArray();
-      res.send(feedbacks);
+
+      let query = {};
+      if (email) {
+        query = { userEmail: email };
+      }
+
+      try {
+        const feedbacks = await feedbackCollection.find(query).toArray();
+        res.send(feedbacks);
+      } catch (err) {
+        console.error("Error fetching feedback:", err);
+        res.status(500).send({ message: "Internal Server Error" });
+      }
     });
 
     // payment-history api
