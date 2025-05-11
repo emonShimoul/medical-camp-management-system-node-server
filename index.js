@@ -47,7 +47,6 @@ async function run() {
 
     // middlewares
     const verifyToken = (req, res, next) => {
-      console.log("inside verify token: ", req.headers.authorization);
       if (!req.headers.authorization) {
         return res.status(401).send({ message: "unauthorized access" });
       }
@@ -230,7 +229,6 @@ async function run() {
     //  fetch by participant email
     app.get("/registeredCamps", async (req, res) => {
       const email = req.query.email;
-      console.log("Fetching registered camps for:", email);
       const result = await registeredCampsCollection
         .find({ userEmail: email })
         .toArray();
@@ -354,6 +352,22 @@ async function run() {
         .toArray();
       res.send(feedbacks);
     });
+
+    // payment-history api
+    app.get("/payment-history", async (req, res) => {
+      const { email } = req.query;
+
+      if (!email) {
+        return res.status(400).send({ message: "Email is required" });
+      }
+
+      const result = await registeredCampsCollection
+        .find({ userEmail: email })
+        .toArray();
+
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
