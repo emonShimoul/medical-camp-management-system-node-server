@@ -167,7 +167,7 @@ async function run() {
       const result = await campCollection.insertOne(camp);
       res.send(result);
     });
-    app.get("/camp", verifyToken, async (req, res) => {
+    app.get("/camp", async (req, res) => {
       const result = await campCollection.find().toArray();
       res.send(result);
     });
@@ -359,14 +359,6 @@ async function run() {
       const result = await feedbackCollection.insertOne(feedbackData);
       res.send(result);
     });
-
-    // app.get("/feedback", async (req, res) => {
-    //   const { email } = req.query;
-    //   const feedbacks = await feedbackCollection
-    //     .find({ userEmail: email })
-    //     .toArray();
-    //   res.send(feedbacks);
-    // });
 
     app.get("/feedback", async (req, res) => {
       const { email } = req.query;
