@@ -6,8 +6,10 @@ const app = express();
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://your-frontend-url.com"],
+    allowedHeaders: ["Content-Type", "authorization"],
   })
 );
+app.options("*", cors()); // <- Add this
 app.use(express.json());
 
 var jwt = require("jsonwebtoken");
